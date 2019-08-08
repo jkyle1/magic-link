@@ -1,10 +1,14 @@
-use actix_web::{server, HttpResponse, Responder, HttpRequest, App, Result};
+use actix_web::{server, HttpResponse, Responder, HttpRequest, App, Result, Form};
 use actix_web::http::{StatusCode, Method, header};
+use actix_web::middleware::session::{CookieSessionBackend, SessionStorage};
 use base64;
 use std::env;
-use actix_web::middleware::session::{CookieSessionBackend, SessionStorage};
 
 
+#[derive(Deserialize)]
+struct LoginForm {
+    user: String, //email or phone
+}
 
 fn home(request: HttpRequest) -> impl Responder {
     HttpResponse::build(StatusCode::OK)
@@ -16,6 +20,10 @@ fn login_page(_: HttpRequest) -> Result<HttpResponse> {
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type("text/html; charset=utf-8")
         .body(include_str!("../static/login.html")))
+}
+
+fn login_submit((form, request): (Form<LoginForm>, HttpRequest)) -> impl Responder {
+    let user = form.into_inner().user;
 }
 
 fn main() {
