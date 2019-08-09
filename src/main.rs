@@ -1,4 +1,4 @@
-use actix_web::{server, HttpResponse, Responder, HttpRequest, App, Result, Form, AsyncResponder};
+use actix_web::{server, HttpResponse, Responder, HttpRequest, App, Result, Form, AsyncResponder, Query};
 use actix_web::http::{StatusCode, Method, header};
 use actix_web::middleware::session::{CookieSessionBackend, SessionStorage, RequestSession};
 use base64;
@@ -75,6 +75,40 @@ fn login_submit((form, request): (Form<LoginForm>, HttpRequest)) -> impl Respond
     }).responder()
 }
 
+#[derive(Deserialize)]
+struct VerifyLoginQuery {
+    #[serde(rename = "c")]
+    challenge: String,
+}
+
+fn verify_login((query, request): (Query<VerifyLoginQuery>, HttpRequest)) -> Result<HttpResponse> {
+    //load pending challenge
+    let pending_challenge: Option<LoginChallenge> = request.session().get("pending_login_challenge")?;
+
+    let login_challenge = match pending_challenge {
+        Some(lc) => lc,
+        None => {
+            return Ok(HttpResponse::build(StatusCode::BAD_REQUEST)
+                .content_type("text/html; charset=utf-8")
+                .body("Invalid session"));
+        }
+    };
+
+    //compare pending challenge to the one received
+    if login_challenge.challenge == query.into_inner().challenge {
+        //store authenticated user bound to the challenge token
+        let _ = request.session().set("authenticated_user", login_challenge.user);
+        //redirect home
+        Ok(HttpResponse::build(StatusCode::TEMPORARY_REDIRECT)
+            .header(header::LOCATION, "/")
+            .finish())
+    } else { //no match
+        Ok(HttpResponse::build(StatusCode::UNAUTHORIZED)
+            .content_type("text/html; charset=utf-8")
+            .body("Invalid challenge"))
+    }
+}
+
 fn main() {
 
     //key to encrypt and decrypt private cookie
@@ -89,6 +123,6 @@ fn main() {
 
         .route("/login", Method::GET, login_page)
         .route("/login", Method::POST, login_submit)
-
+        .route("/verify_login", Method::GET, verify_login)
 }
 
