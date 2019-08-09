@@ -6,7 +6,17 @@ edition = "2018"
 
 [dependencies]
 actix-web = "0.7.19"
-serde = "1.0.98"
 approveapi = "1.0.3"
 failure = "0.1.5"
 futures = "0.1.25"
+base64 = "0.10.0"
+actix = "0.7.9"
+rand = "0.6.5"
+cookie = "0.11.0"
+lazy_static = "1.2.0"
+handlebars = "1.1.0"
+env_logger = "0.6.1"
+
+[dependencies.serde]
+features = ["derive"]
+version = "1.0"
